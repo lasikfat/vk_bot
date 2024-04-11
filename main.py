@@ -1,4 +1,5 @@
 import datetime
+import sqlite3
 
 import vk_api
 from vk_api import VkUpload
@@ -15,9 +16,9 @@ def write_text_message(sender, message, keyboard=None):
     }
 
     if keyboard != None:
-        if kb_step == 'clothes':
+        if k_step == 'clothes':
             post['keyboard'] = kb_clothes.get_keyboard()
-        if kb_step == 'size':
+        if k_step == 'size':
             post['keyboard'] = kb_size.get_keyboard()
 
     authorize.method('messages.send', post)
@@ -27,40 +28,73 @@ token = "vk1.a.TF-4u2teyNARjY5o3Xc-o1wyV9FmLVz0tynbYw8YI6ef3keD7M9nuKJH-yMFAaNUJ
 authorize = vk_api.VkApi(token=token)
 longpoll = VkLongPoll(authorize)
 insturction_image = "C:/Users/Azerty/PycharmProjects/pythonProject/dish.jpg"
+
+con = sqlite3.connect("clients.sql")
+cur = con.cursor()
+
+k_step = ''
+
+txt = open('check_list.txt', 'r+')
+
 upload = VkUpload(authorize)
 current_time = datetime.datetime.now()
 current_hour = current_time.hour
-kb_step = None
-kb_clothes = VkKeyboard(one_time=False)
-kb_clothes.add_button('Худи', color=VkKeyboardColor.PRIMARY)
-kb_clothes.add_line()
-kb_clothes.add_button('Футболка', color=VkKeyboardColor.PRIMARY)
-kb_clothes.add_line()
-kb_clothes.add_button('Свитшот', color=VkKeyboardColor.PRIMARY)
-kb_clothes.add_line()
-kb_clothes.add_button('Шопер', color=VkKeyboardColor.PRIMARY)
-clothes_var = ['Худи', 'Футболка', 'Свитшот', 'Шопер']
 
+clothes_var = ['Худи', 'Футболка', 'Свитшот', 'Шопер', 'Начать заново']
+kb_clothes = VkKeyboard(one_time=False)
+kb_clothes.add_button(clothes_var[0], color=VkKeyboardColor.PRIMARY)
+kb_clothes.add_line()
+kb_clothes.add_button(clothes_var[1], color=VkKeyboardColor.PRIMARY)
+kb_clothes.add_line()
+kb_clothes.add_button(clothes_var[2], color=VkKeyboardColor.PRIMARY)
+kb_clothes.add_line()
+kb_clothes.add_button(clothes_var[3], color=VkKeyboardColor.PRIMARY)
+kb_clothes.add_line()
+kb_clothes.add_button(clothes_var[4], color=VkKeyboardColor.NEGATIVE)
+
+size_var = ["XS", "S", "M", "L", "XL", "Начать заново"]
 kb_size = VkKeyboard(one_time=False)
-kb_size.add_button('XS', color=VkKeyboardColor.PRIMARY)
+kb_size.add_button(size_var[0], color=VkKeyboardColor.PRIMARY)
 kb_size.add_line()
-kb_size.add_button('S', color=VkKeyboardColor.PRIMARY)
+kb_size.add_button(size_var[1], color=VkKeyboardColor.PRIMARY)
 kb_size.add_line()
-kb_size.add_button('M', color=VkKeyboardColor.PRIMARY)
+kb_size.add_button(size_var[2], color=VkKeyboardColor.PRIMARY)
 kb_size.add_line()
-kb_size.add_button('L', color=VkKeyboardColor.PRIMARY)
+kb_size.add_button(size_var[3], color=VkKeyboardColor.PRIMARY)
 kb_size.add_line()
-kb_size.add_button('XL', color=VkKeyboardColor.PRIMARY)
-size_var = ["XS",  "S", "M", "L", "XL"]
+kb_size.add_button(size_var[4], color=VkKeyboardColor.PRIMARY)
+kb_size.add_line()
+kb_size.add_button(size_var[5], color=VkKeyboardColor.NEGATIVE)
+
 # keyboard1.add_openlink_button('Это Второй ссылка', link='https://rutube.ru/plst/250864/')
 
 for event in longpoll.listen():
     if event.type == VkEventType.MESSAGE_NEW and event.to_me and event.text:
         res_message = event.text
         sender = event.user_id
+
+
+        # txt.write()
         # attachments = []
         # upload_image = upload.photo_messages(photos=insturction_image)[0]
         # attachments.append('photo{}_{}'.format(upload_image['owner_id'], upload_image['id']))
+
+        def data_col():
+            global k_step
+            global txt
+            if res_message == 'Начать':
+                k_step = 'clothes'
+                write_text_message(sender, hel_time + ", выберите одежду из списка:", kb_clothes)
+            if res_message in clothes_var:
+                k_step = 'size'
+                txt.write(res_message + ' ')
+                write_text_message(sender, "Выберите размер", kb_size)
+            if res_message in size_var:
+                txt.write(res_message + ' ')
+                write_text_message(sender, "Напишите свой номер телефона для контакта")
+            txt.write(res_message + ' \n')
+            write_text_message(sender, "Пришлите в чат картинку с вышивкой")
+
 
         # Приветствие с учетом реального времени
         if current_hour >= 6 and current_hour < 12:
@@ -71,12 +105,6 @@ for event in longpoll.listen():
             hel_time = "Добрый вечер"
         else:
             hel_time = "Доброй ночи"
-        if res_message == 'Начать':
-            kb_step = 'clothes'
-            write_text_message(sender, hel_time + ", выберите одежду из списка:", kb_clothes)
-            # Записать данные в файл
-        if res_message in clothes_var:
-            kb_step = 'size'
-            write_text_message(sender, "Выберите размер", kb_size)
-        if res_message in size_var:
-            write_text_message(sender, "Пришлите в чат картинку с вышивкой")
+        data_col()
+
+txt.close()
