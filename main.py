@@ -16,6 +16,10 @@ def write_text_message(sender, message, keyboard=None):
     }
 
     if keyboard != None:
+        if k_step == 'zak':
+            post['keyboard'] = kb_zak.get_keyboard()
+        if k_step == 'reg':
+            post['keyboard'] = kb_var.get_keyboard()
         if k_step == 'clothes':
             post['keyboard'] = kb_clothes.get_keyboard()
         if k_step == 'size':
@@ -51,44 +55,45 @@ cur.execute("""CREATE TABLE IF NOT EXISTS users (
 )""")
 db.commit()
 
+adm = 'lam000'
+
 userAct = '0'
 
 upload = VkUpload(authorize)
 current_time = datetime.datetime.now()
 current_hour = current_time.hour
 
-
-var_go = ['регистрация']
+var_go = ['Регистрация']
 kb_var = VkKeyboard(one_time=False)
 kb_var.add_button(var_go[0], color=VkKeyboardColor.POSITIVE)
+kb_var.add_line()
 
-
-var_zak = ['сделать заказ']
+var_zak = ['Сделать заказ']
 kb_zak = VkKeyboard(one_time=False)
 kb_zak.add_button(var_zak[0], color=VkKeyboardColor.POSITIVE)
+kb_var.add_line()
 
+clothes_var = ['Худи', 'Футболка', 'Свитшот', 'Шопер']
+kb_clothes = VkKeyboard(one_time=True)
+kb_clothes.add_button(clothes_var[0], color=VkKeyboardColor.POSITIVE)
+kb_clothes.add_line()
+kb_clothes.add_button(clothes_var[1], color=VkKeyboardColor.POSITIVE)
+kb_clothes.add_line()
+kb_clothes.add_button(clothes_var[2], color=VkKeyboardColor.POSITIVE)
+kb_clothes.add_line()
+kb_clothes.add_button(clothes_var[3], color=VkKeyboardColor.POSITIVE)
 
-clothes_var = ['худи', 'футболка', 'свитшот', 'шопер']
-kb_clothes = VkKeyboard(one_time=False)
-kb_clothes.add_button(clothes_var[0], color=VkKeyboardColor.PRIMARY)
-kb_clothes.add_line()
-kb_clothes.add_button(clothes_var[1], color=VkKeyboardColor.PRIMARY)
-kb_clothes.add_line()
-kb_clothes.add_button(clothes_var[2], color=VkKeyboardColor.PRIMARY)
-kb_clothes.add_line()
-kb_clothes.add_button(clothes_var[3], color=VkKeyboardColor.PRIMARY)
-
-size_var = ["xl", "s", "m", "l", "Xl"]
-kb_size = VkKeyboard(one_time=False)
-kb_size.add_button(size_var[0], color=VkKeyboardColor.PRIMARY)
+size_var = ["Xl", "S", "M", "L", "XL"]
+kb_size = VkKeyboard(one_time=True)
+kb_size.add_button(size_var[0], color=VkKeyboardColor.POSITIVE)
 kb_size.add_line()
-kb_size.add_button(size_var[1], color=VkKeyboardColor.PRIMARY)
+kb_size.add_button(size_var[1], color=VkKeyboardColor.POSITIVE)
 kb_size.add_line()
-kb_size.add_button(size_var[2], color=VkKeyboardColor.PRIMARY)
+kb_size.add_button(size_var[2], color=VkKeyboardColor.POSITIVE)
 kb_size.add_line()
-kb_size.add_button(size_var[3], color=VkKeyboardColor.PRIMARY)
+kb_size.add_button(size_var[3], color=VkKeyboardColor.POSITIVE)
 kb_size.add_line()
-kb_size.add_button(size_var[4], color=VkKeyboardColor.PRIMARY)
+kb_size.add_button(size_var[4], color=VkKeyboardColor.POSITIVE)
 
 if current_hour >= 6 and current_hour < 12:
     hel_time = "Доброе утро"
@@ -99,8 +104,6 @@ elif current_hour >= 18 and current_hour < 0:
 else:
     hel_time = "Доброй ночи"
 
-# keyboard1.add_openlink_button('Это Второй ссылка', link='https://rutube.ru/plst/250864/')
-
 for event in longpoll.listen():
     if event.type == VkEventType.MESSAGE_NEW and event.to_me and event.text:
         res_message = event.text.lower()
@@ -109,13 +112,14 @@ for event in longpoll.listen():
         if cur.fetchone() is None:
             cur.execute("INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?)", (sender, "0", "newUser", "0", "0", "0", "0"))
             db.commit()
-            k_step = 'go'
+            k_step = 'reg'
             write_text_message(sender,
-                               hel_time + ", приветствуем вас в нашей студии. Я бот-помощник. Помогу вам со всеми вопросами. Если ты впервые, то быстрее регистрируйся!")
+                               "Приветствуем вас в нашей студии. Я бот-помощник. Помогу вам со всеми вопросами!")
+            cur.execute(f"UPDATE users SET act = 'newUser' WHERE userID = {sender}")
         else:
             userAct = cur.execute(f"SELECT act FROM users WHERE userID = '{sender}'").fetchone()[0]
-            if userAct == "newUser" and res_message == 'регистрация':
-                write_text_message(sender, "Давай познакомимся, а потом сделаем заказ. Как тебя зовут? Напиши свое ФИ",)
+            if userAct == "newUser":
+                write_text_message(sender, "Давай познакомимся, а потом сделаем заказ. Как тебя зовут? Напиши свое ФИ")
                 cur.execute(f"UPDATE users SET act = 'get_fio' WHERE userID = {sender}")
                 db.commit()
             elif userAct == 'get_fio':
@@ -127,27 +131,28 @@ for event in longpoll.listen():
                 cur.execute(f"UPDATE users SET adres = {fixMes(res_message)} WHERE userID = {sender}")
                 cur.execute(f"UPDATE users SET act = 'zakaz' WHERE userID = {sender}")
                 db.commit()
+                k_step = 'zak'
                 write_text_message(sender,
-                                   "Ура! Теперь мы с тобой знакомы, если ты хочешь узнать о нас, то можешь посмотреть нашу группу. Там много интересного. Чтобы сделать заказ просто нажми кнопку Сделать заказ",)
+                                   "Ура! Теперь мы с тобой знакомы, если ты хочешь узнать о нас, то можешь посмотреть нашу группу. Там много интересного. Чтобы сделать заказ просто нажми кнопку 'Сделать заказ'",
+                                   kb_zak)
             elif userAct == "zakaz" and res_message == 'сделать заказ':
                 cur.execute(f"UPDATE users SET act = 'get_clothes' WHERE userID = {sender}")
                 db.commit()
-                kb_var = 'clothes'
+                k_step = 'clothes'
                 write_text_message(sender, "Выбери одежду на которой ты хочешь вышивку", kb_clothes)
-            elif userAct == 'get_clothes' and res_message in clothes_var:
+            elif userAct == 'get_clothes':
                 cur.execute(f"UPDATE users SET clothes = {fixMes(res_message)} WHERE userID = {sender}")
                 cur.execute(f"UPDATE users SET act = 'get_size' WHERE userID = {sender}")
                 db.commit()
-                kb_var = 'size'
+                k_step = 'size'
                 write_text_message(sender, "Осталось совсем чуть чуть! Выбери размер одежды", kb_size)
-            elif userAct == 'get_size' and res_message in size_var:
+            elif userAct == 'get_size':
                 cur.execute(f"UPDATE users SET size = {fixMes(res_message)} WHERE userID = {sender}")
                 cur.execute(f"UPDATE users SET act = 'get_emb' WHERE userID = {sender}")
                 db.commit()
                 write_text_message(sender, "Опишите вышивку или пришлите фото!")
             elif userAct == 'get_emb':
                 write_text_message(sender,
-                                   "Спасибо за заказ! Я все записал и передам нашему администратору, он скоро свяжется с вами!",)
-
+                                   "Спасибо! Я все записал и передам нашему администратору, он скоро свяжется с вами!")
 
 txt.close()
