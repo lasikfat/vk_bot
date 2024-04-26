@@ -114,7 +114,7 @@ for event in longpoll.listen():
             db.commit()
             k_step = 'reg'
             write_text_message(sender,
-                               "Приветствуем вас в нашей студии. Я бот-помощник. Помогу вам со всеми вопросами!")
+                               "Приветствуем вас в нашей студии. Я бот-помощник. Помогу вам со всеми вопросами! Напиши слово 'Регистрация'")
             cur.execute(f"UPDATE users SET act = 'newUser' WHERE userID = {sender}")
         else:
             userAct = cur.execute(f"SELECT act FROM users WHERE userID = '{sender}'").fetchone()[0]
